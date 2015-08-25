@@ -16,6 +16,8 @@ import android.view.View;
 import android.widget.FrameLayout;
 
 import com.r0adkll.slidr.model.SlidrConfig;
+import com.r0adkll.slidr.model.SlidrPosition;
+
 import static com.r0adkll.slidr.model.SlidrPosition.*;
 
 /**
@@ -41,11 +43,15 @@ public class SliderPanel extends FrameLayout {
 
     private int mScreenWidth;
     private int mScreenHeight;
+
     private View mDimView;
     private View mDecorView;
     private ViewDragHelper mDragHelper;
     private OnPanelSlideListener mListener;
+
     private boolean mIsLocked = false;
+    private boolean mIsEdgeTouched = false;
+    private int mEdgePosition;
 
     private SlidrConfig mConfig;
 
@@ -87,40 +93,39 @@ public class SliderPanel extends FrameLayout {
         final float minVel = MIN_FLING_VELOCITY * density;
 
         ViewDragHelper.Callback callback;
-        int position;
         switch (mConfig.getPosition()){
             case LEFT:
                 callback = mLeftCallback;
-                position = ViewDragHelper.EDGE_LEFT;
+                mEdgePosition = ViewDragHelper.EDGE_LEFT;
                 break;
             case RIGHT:
                 callback = mRightCallback;
-                position = ViewDragHelper.EDGE_RIGHT;
+                mEdgePosition = ViewDragHelper.EDGE_RIGHT;
                 break;
             case TOP:
                 callback = mTopCallback;
-                position = ViewDragHelper.EDGE_TOP;
+                mEdgePosition = ViewDragHelper.EDGE_TOP;
                 break;
             case BOTTOM:
                 callback = mBottomCallback;
-                position = ViewDragHelper.EDGE_BOTTOM;
+                mEdgePosition = ViewDragHelper.EDGE_BOTTOM;
                 break;
             case VERTICAL:
                 callback = mVerticalCallback;
-                position = ViewDragHelper.EDGE_TOP | ViewDragHelper.EDGE_BOTTOM;
+                mEdgePosition = ViewDragHelper.EDGE_TOP | ViewDragHelper.EDGE_BOTTOM;
                 break;
             case HORIZONTAL:
                 callback = mHorizontalCallback;
-                position = ViewDragHelper.EDGE_LEFT | ViewDragHelper.EDGE_RIGHT;
+                mEdgePosition = ViewDragHelper.EDGE_LEFT | ViewDragHelper.EDGE_RIGHT;
                 break;
             default:
                 callback = mLeftCallback;
-                position = ViewDragHelper.EDGE_LEFT;
+                mEdgePosition = ViewDragHelper.EDGE_LEFT;
         }
 
         mDragHelper = ViewDragHelper.create(this, mConfig.getSensitivity(), callback);
         mDragHelper.setMinVelocity(minVel);
-        mDragHelper.setEdgeTrackingEnabled(position);
+        mDragHelper.setEdgeTrackingEnabled(mEdgePosition);
 
         ViewGroupCompat.setMotionEventSplittingEnabled(this, false);
 
@@ -156,17 +161,30 @@ public class SliderPanel extends FrameLayout {
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         boolean interceptForDrag;
 
+        if(mIsLocked){
+            return false;
+        }
+
+        if(mConfig.isEdgeOnly()) {
+            mIsEdgeTouched = canDragFromEdge(ev);
+        }
+
         // Fix for pull request #13 and issue #12
         try {
             interceptForDrag = mDragHelper.shouldInterceptTouchEvent(ev);
-        }catch (Exception e){
+        } catch (Exception e) {
             interceptForDrag = false;
         }
+
         return interceptForDrag && !mIsLocked;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if(mIsLocked){
+            return false;
+        }
+
         try {
             mDragHelper.processTouchEvent(event);
         }catch (IllegalArgumentException e){
@@ -189,7 +207,7 @@ public class SliderPanel extends FrameLayout {
      * Lock this sliding panel to ignore touch inputs.
      */
     public void lock(){
-        mDragHelper.cancel();
+        mDragHelper.abort();
         mIsLocked = true;
     }
 
@@ -197,10 +215,30 @@ public class SliderPanel extends FrameLayout {
      * Unlock this sliding panel to listen to touch inputs.
      */
     public void unlock(){
-        mDragHelper.cancel();
+        mDragHelper.abort();
         mIsLocked = false;
     }
 
+    private boolean canDragFromEdge(MotionEvent ev) {
+        float x = ev.getX();
+        float y = ev.getY();
+
+        switch (mConfig.getPosition()) {
+            case LEFT:
+                return x < mConfig.getEdgeSize(getWidth());
+            case RIGHT:
+                return x > getWidth() - mConfig.getEdgeSize(getWidth());
+            case BOTTOM:
+                return y > getHeight() - mConfig.getEdgeSize(getHeight());
+            case TOP:
+                return y < mConfig.getEdgeSize(getHeight());
+            case HORIZONTAL:
+                return x < mConfig.getEdgeSize(getWidth()) || x > getWidth() - mConfig.getEdgeSize(getWidth());
+            case VERTICAL:
+                return y < mConfig.getEdgeSize(getHeight()) || y > getHeight() - mConfig.getEdgeSize(getHeight());
+        }
+        return false;
+    }
 
     /***********************************************************************************************
      *
@@ -216,7 +254,8 @@ public class SliderPanel extends FrameLayout {
 
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            boolean edgeCase = !mConfig.isEdgeOnly() || mDragHelper.isEdgeTouched(mEdgePosition, pointerId);
+            return child.getId() == mDecorView.getId() && edgeCase;
         }
 
         @Override
@@ -298,7 +337,8 @@ public class SliderPanel extends FrameLayout {
     private ViewDragHelper.Callback mRightCallback = new ViewDragHelper.Callback() {
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            boolean edgeCase = mConfig.isEdgeOnly() ? mDragHelper.isEdgeTouched(mEdgePosition, pointerId) : true;
+            return child.getId() == mDecorView.getId() && edgeCase;
         }
 
         @Override
@@ -379,7 +419,7 @@ public class SliderPanel extends FrameLayout {
     private ViewDragHelper.Callback mTopCallback = new ViewDragHelper.Callback() {
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            return child.getId() == mDecorView.getId() && (!mConfig.isEdgeOnly() || mIsEdgeTouched);
         }
 
         @Override
@@ -458,7 +498,7 @@ public class SliderPanel extends FrameLayout {
     private ViewDragHelper.Callback mBottomCallback = new ViewDragHelper.Callback() {
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            return child.getId() == mDecorView.getId() && (!mConfig.isEdgeOnly() || mIsEdgeTouched);
         }
 
         @Override
@@ -537,7 +577,7 @@ public class SliderPanel extends FrameLayout {
     private ViewDragHelper.Callback mVerticalCallback = new ViewDragHelper.Callback() {
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            return child.getId() == mDecorView.getId() && (!mConfig.isEdgeOnly() || mIsEdgeTouched);
         }
 
         @Override
@@ -631,7 +671,8 @@ public class SliderPanel extends FrameLayout {
     private ViewDragHelper.Callback mHorizontalCallback = new ViewDragHelper.Callback() {
         @Override
         public boolean tryCaptureView(View child, int pointerId) {
-            return child.getId() == mDecorView.getId();
+            boolean edgeCase = !mConfig.isEdgeOnly() || mDragHelper.isEdgeTouched(mEdgePosition, pointerId);
+            return child.getId() == mDecorView.getId() && edgeCase;
         }
 
         @Override
