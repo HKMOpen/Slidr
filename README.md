@@ -53,6 +53,8 @@ SlidrConfig config = new SlidrConfig.Builder()
 	.scrimEndAlpha(0f)
 	.velocityThreshold(2400)
 	.distanceThreshold(0.25f)
+	.edge(true|false)
+	.edgeSize(0.18f) // The % of the screen that counts as the edge, default 18%
 	.listener(new SlidrListener(){...})
 	.build();
 
@@ -97,7 +99,7 @@ Then in the layout of your activity you must give it a background like this;
 Include this line in your gradle build file:
 
 ```groovy
-compile 'com.r0adkll:slidableactivity:2.0.3'
+compile 'com.r0adkll:slidableactivity:2.0.4'
 ```
 
 For Snapshots, include these lines in your gradle files:
@@ -111,7 +113,7 @@ repositories {
 
 ```groovy
 dependencies{
-	compile 'com.r0adkll:slidableactivity:2.0.4-SNAPSHOT'
+	compile 'com.r0adkll:slidableactivity:2.0.5-SNAPSHOT'
 }
 ```
 
