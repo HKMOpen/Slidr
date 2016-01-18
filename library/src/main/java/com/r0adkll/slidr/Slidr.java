@@ -46,17 +46,8 @@ public class Slidr {
      */
     public static SlidrInterface attach(final Activity activity, final int statusBarColor1, final int statusBarColor2){
 
-        // Hijack the decorview
-        ViewGroup decorView = (ViewGroup)activity.getWindow().getDecorView();
-        View oldScreen = decorView.getChildAt(0);
-        decorView.removeViewAt(0);
-
-        // Setup the slider panel and attach it to the decor
-        final SliderPanel panel = new SliderPanel(activity, oldScreen);
-        panel.setId(R.id.slidable_panel);
-        oldScreen.setId(R.id.slidable_content);
-        panel.addView(oldScreen);
-        decorView.addView(panel, 0);
+		// Setup the slider panel and attach it to the decor
+		final SliderPanel panel = initSliderPanel(activity, null);
 
         // Set the panel slide listener for when it becomes closed or opened
         panel.setOnPanelSlideListener(new SliderPanel.OnPanelSlideListener() {
@@ -75,7 +66,9 @@ public class Slidr {
             }
 
             @Override
-            public void onOpened() {}
+            public void onOpened() {
+
+			}
 
             @TargetApi(Build.VERSION_CODES.LOLLIPOP)
             @Override
@@ -89,21 +82,8 @@ public class Slidr {
             }
         });
 
-        // Setup the lock interface
-        SlidrInterface slidrInterface = new SlidrInterface() {
-            @Override
-            public void lock() {
-                panel.lock();
-            }
-
-            @Override
-            public void unlock() {
-                panel.unlock();
-            }
-        };
-
-        // Return the lock interface
-        return slidrInterface;
+		// Return the lock interface
+		return initInterface(panel);
     }
 
     /**
@@ -116,17 +96,8 @@ public class Slidr {
      */
     public static SlidrInterface attach(final Activity activity, final SlidrConfig config){
 
-        // Hijack the decorview
-        ViewGroup decorView = (ViewGroup)activity.getWindow().getDecorView();
-        View oldScreen = decorView.getChildAt(0);
-        decorView.removeViewAt(0);
-
         // Setup the slider panel and attach it to the decor
-        final SliderPanel panel = new SliderPanel(activity, oldScreen, config);
-        panel.setId(R.id.slidable_panel);
-        oldScreen.setId(R.id.slidable_content);
-        panel.addView(oldScreen);
-        decorView.addView(panel, 0);
+        final SliderPanel panel = initSliderPanel(activity, config);
 
         // Set the panel slide listener for when it becomes closed or opened
         panel.setOnPanelSlideListener(new SliderPanel.OnPanelSlideListener() {
@@ -177,92 +148,41 @@ public class Slidr {
             }
         });
 
-        // Setup the lock interface
-        SlidrInterface slidrInterface = new SlidrInterface() {
-            @Override
-            public void lock() {
-                panel.lock();
-            }
-
-            @Override
-            public void unlock() {
-                panel.unlock();
-            }
-        };
-
         // Return the lock interface
-        return slidrInterface;
-
+        return initInterface(panel);
     }
 
-    /**
-     * Replace a viewgroup with the sliding mechanism
-     *
-     * @param view
-     * @param config
-     * @return
-     */
-    public static SlidrInterface replace(final ViewGroup view, final SlidrConfig config){
+	private static SliderPanel initSliderPanel(final Activity activity, final SlidrConfig config) {
+		// Hijack the decorview
+		ViewGroup decorView = (ViewGroup)activity.getWindow().getDecorView();
+		View oldScreen = decorView.getChildAt(0);
+		decorView.removeViewAt(0);
 
-        ViewGroup parent = (ViewGroup)view.getParent();
-        ViewGroup.LayoutParams params = view.getLayoutParams();
-        parent.removeView(view);
+		// Setup the slider panel and attach it to the decor
+		SliderPanel panel = new SliderPanel(activity, oldScreen, config);
+		panel.setId(R.id.slidable_panel);
+		oldScreen.setId(R.id.slidable_content);
+		panel.addView(oldScreen);
+		decorView.addView(panel, 0);
+		return panel;
+	}
 
-        // Setup the slider panel and attach it to the decor
-        final SliderPanel panel = new SliderPanel(view.getContext(), view, config);
-        panel.setId(view.getId());
-        view.setId(R.id.slidable_panel);
-        panel.addView(view);
-        parent.addView(panel, params);
+	private static SlidrInterface initInterface(final SliderPanel panel) {
+		// Setup the lock interface
+		SlidrInterface slidrInterface = new SlidrInterface() {
+			@Override
+			public void lock() {
+				panel.lock();
+			}
 
-        // Set the panel slide listener for when it becomes closed or opened
-        panel.setOnPanelSlideListener(new SliderPanel.OnPanelSlideListener() {
+			@Override
+			public void unlock() {
+				panel.unlock();
+			}
+		};
 
-            @Override
-            public void onStateChanged(int state) {
-                if(config.getListener() != null){
-                    config.getListener().onSlideStateChanged(state);
-                }
-            }
-
-            @Override
-            public void onClosed() {
-                if(config.getListener() != null){
-                    config.getListener().onSlideClosed();
-                }
-            }
-
-            @Override
-            public void onOpened() {
-                if(config.getListener() != null){
-                    config.getListener().onSlideOpened();
-                }
-            }
-
-            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-            @Override
-            public void onSlideChange(float percent) {
-                if(config.getListener() != null){
-                    config.getListener().onSlideChange(percent);
-                }
-            }
-        });
-
-        // Setup the lock interface
-        SlidrInterface slidrInterface = new SlidrInterface() {
-            @Override
-            public void lock() {
-                panel.lock();
-            }
-
-            @Override
-            public void unlock() {
-                panel.unlock();
-            }
-        };
-
-        // Return the lock interface
-        return slidrInterface;
-    }
+		// Return the lock interface
+		return slidrInterface;
+	}
 
 }

@@ -1,7 +1,6 @@
 package com.r0adkll.slidr.model;
 
 import android.graphics.Color;
-import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.FloatRange;
 
@@ -33,6 +32,12 @@ public class SlidrConfig {
      * Use the builder pattern
      */
     private SlidrConfig(){}
+
+    /***********************************************************************************************
+     *
+     * Getters
+     *
+     */
 
     /**
      * Get the primary color that the slider will interpolate. That is this color is the color
@@ -143,7 +148,7 @@ public class SlidrConfig {
 
     /**
      * Return whether or not the set status bar colors are valid
-     * @return
+     * @return true if primary and secondary color are set
      */
     public boolean areStatusBarColorsValid(){
         return colorPrimary != -1 && colorSecondary != -1;
@@ -166,6 +171,48 @@ public class SlidrConfig {
      */
     public float getEdgeSize(float size) {
         return edgeSize * size;
+    }
+
+    /***********************************************************************************************
+     *
+     * Setters
+     *
+     */
+
+    public void setColorPrimary(int colorPrimary) {
+        this.colorPrimary = colorPrimary;
+    }
+
+    public void setColorSecondary(int colorSecondary) {
+        this.colorSecondary = colorSecondary;
+    }
+
+    public void setTouchSize(float touchSize) {
+        this.touchSize = touchSize;
+    }
+
+    public void setSensitivity(float sensitivity) {
+        this.sensitivity = sensitivity;
+    }
+
+    public void setScrimColor(int scrimColor) {
+        this.scrimColor = scrimColor;
+    }
+
+    public void setScrimStartAlpha(float scrimStartAlpha) {
+        this.scrimStartAlpha = scrimStartAlpha;
+    }
+
+    public void setScrimEndAlpha(float scrimEndAlpha) {
+        this.scrimEndAlpha = scrimEndAlpha;
+    }
+
+    public void setVelocityThreshold(float velocityThreshold) {
+        this.velocityThreshold = velocityThreshold;
+    }
+
+    public void setDistanceThreshold(float distanceThreshold) {
+        this.distanceThreshold = distanceThreshold;
     }
 
     /**

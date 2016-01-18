@@ -3,12 +3,20 @@ apply plugin: 'maven'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion "23.0.1"
+    buildToolsVersion buildTools
 
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 23
+		versionCode libraryCode
+		versionName libraryVersion
     }
+
+	buildTypes {
+		release {
+			minifyEnabled false
+			proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+		}
+	}
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7
@@ -17,7 +25,7 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:support-v4:23.0.1'
+    compile supportDependencies.support
 }
 
 apply from: '../gradle-mvn-push.gradle'
